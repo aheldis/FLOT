@@ -116,8 +116,8 @@ def eval_model(scene_flow, testloader):
         scene_flow.zero_grad()
         epe.mean().backward()
         data_grad = batch["sequence"][0].grad.data
-        print(batch["sequence"][0].shape)
-        batch["sequence"][0].data[:,:,0] = fgsm_attack(batch["sequence"][0], 10, data_grad)[:,:,0]
+        # print(batch["sequence"][0].shape)
+        batch["sequence"][0].data[:,:,1] = fgsm_attack(batch["sequence"][0], 10, data_grad)[:,:,1]
         est_flow = scene_flow(batch["sequence"])
         # end attack
 
