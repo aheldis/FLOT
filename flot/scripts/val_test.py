@@ -37,7 +37,7 @@ def compute_epe(est_flow, batch):
 
     # Flow
     sf_gt = batch["ground_truth"][1].cpu().numpy()[mask > 0]
-    sf_pred = est_flow.cpu().numpy()[mask > 0]
+    sf_pred = est_flow.detach().cpu().numpy()[mask > 0]
 
     #
     l2_norm = np.linalg.norm(sf_gt - sf_pred, axis=-1)
