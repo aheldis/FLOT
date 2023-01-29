@@ -107,14 +107,13 @@ def eval_model(scene_flow, testloader):
 
         # Estimate flow
         # with torch.no_grad():
-        print(batch["sequence"])
         batch["sequence"][0].requires_grad = True # for attack
         est_flow = scene_flow(batch["sequence"])
         # start attack
         sf_gt = batch["ground_truth"][1]
         sf_pred = est_flow
         epe = torch.sum((sf_pred - sf_gt)**2, dim=0).sqrt().view(-1)
-        model.zero_grad()
+        scene_flow.zero_grad()
         epe.mean().backward()
         data_grad = batch["sequence"][0].grad.data
         batch["sequence"][0] = fgsm_attack(batch["sequence"][0], 10, data_grad)
