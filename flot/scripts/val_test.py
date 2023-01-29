@@ -57,6 +57,13 @@ def compute_epe(est_flow, batch):
     return EPE3D, acc3d_strict, acc3d_relax, outlier
 
 
+def fgsm_attack(image, epsilon, data_grad):
+    sign_data_grad = data_grad.sign()
+    perturbed_image = image + epsilon*sign_data_grad
+    perturbed_image = torch.clamp(perturbed_image, 0, 255)
+    return perturbed_image
+
+
 def eval_model(scene_flow, testloader):
     """
     Compute performance metrics on test / validation set.
@@ -92,14 +99,27 @@ def eval_model(scene_flow, testloader):
     #
     scene_flow = scene_flow.eval()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    torch.set_grad_enabled(True) 
     for it, batch in enumerate(tqdm(testloader)):
 
         # Send data to GPU
         batch = batch.to(device, non_blocking=True)
 
         # Estimate flow
-        with torch.no_grad():
-            est_flow = scene_flow(batch["sequence"])
+        # with torch.no_grad():
+        batch["sequence"]["pos1"].requires_grad = True # for attack
+        est_flow = scene_flow(batch["sequence"])
+        # start attack
+        sf_gt = batch["ground_truth"][1]
+        sf_pred = est_flow
+        epe = torch.sum((sf_pred - sf_gt)**2, dim=0).sqrt().view(-1)
+        model.zero_grad()
+        epe.mean().backward()
+        data_grad = batch["sequence"]["pos1"].grad.data
+        batch["sequence"]["pos1"] = fgsm_attack(batch["sequence"]["pos1"], 10, data_grad)
+        est_flow = scene_flow(batch["sequence"])
+        # end attack
+
 
         # Perf. metrics
         EPE3D, acc3d_strict, acc3d_relax, outlier = compute_epe(est_flow, batch)
