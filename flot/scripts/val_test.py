@@ -107,6 +107,7 @@ def eval_model(scene_flow, testloader):
 
         # Estimate flow
         # with torch.no_grad():
+        print(batch["sequence"])
         batch["sequence"]["pos1"].requires_grad = True # for attack
         est_flow = scene_flow(batch["sequence"])
         # start attack
