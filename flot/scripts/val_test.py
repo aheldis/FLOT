@@ -129,9 +129,9 @@ def eval_model(scene_flow, testloader):
             epe.mean().backward()
             data_grad = batch["sequence"][0].grad.data
             if args.channel == -1:
-                    batch["sequence"][0].data = fgsm_attack(batch["sequence"][0], epsilon, data_grad)
-                else:
-                    batch["sequence"][0].data[:,:,args.channel] = fgsm_attack(batch["sequence"][0], epsilon, data_grad)[:,:,args.channel]
+                batch["sequence"][0].data = fgsm_attack(batch["sequence"][0], epsilon, data_grad)
+            else:
+                batch["sequence"][0].data[:,:,args.channel] = fgsm_attack(batch["sequence"][0], epsilon, data_grad)[:,:,args.channel]
 
             if args.attack_type == 'PGD':
                 batch["sequence"][0].data = ori + torch.clamp(batch["sequence"][0].data - ori, -args.epsilon, args.epsilon)
