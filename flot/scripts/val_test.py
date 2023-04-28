@@ -99,7 +99,8 @@ def eval_model(scene_flow, testloader):
     #
     scene_flow = scene_flow.eval()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    torch.set_grad_enabled(True) 
+    if args.attack_type != 'None':
+        torch.set_grad_enabled(True) 
     for it, batch in enumerate(tqdm(testloader)):
 
         # Send data to GPU
@@ -107,19 +108,34 @@ def eval_model(scene_flow, testloader):
 
         # Estimate flow
         # with torch.no_grad():
-        batch["sequence"][0].requires_grad = True # for attack
+        if args.attack_type != 'None':
+            batch["sequence"][0].requires_grad = True # for attack
         est_flow = scene_flow(batch["sequence"])
         # start attack
-        sf_gt = batch["ground_truth"][1]
-        sf_pred = est_flow
-        epe = torch.sum((sf_pred - sf_gt)**2, dim=0).sqrt().view(-1)
-        scene_flow.zero_grad()
-        epe.mean().backward()
-        data_grad = batch["sequence"][0].grad.data
-        # print(batch["sequence"][0].shape)
-        batch["sequence"][0].data[:,:,0] = fgsm_attack(batch["sequence"][0], 2, data_grad)[:,:,0]
-        # [:,:,2]
-        est_flow = scene_flow(batch["sequence"])
+        if args.attack_type != 'None':
+            if args.attack_type == 'FGSM':
+                epsilon = args.epsilon
+                pgd_iters = 1
+            else:
+                epsilon = args.epsilon / args.iters
+                pgd_iters = args.iters
+
+        ori = batch["sequence"][0].data
+        for itr in range(pgd_iters):
+            sf_gt = batch["ground_truth"][1]
+            sf_pred = est_flow
+            epe = torch.sum((sf_pred - sf_gt)**2, dim=0).sqrt().view(-1)
+            scene_flow.zero_grad()
+            epe.mean().backward()
+            data_grad = batch["sequence"][0].grad.data
+            if args.channel == -1:
+                    batch["sequence"][0].data = fgsm_attack(batch["sequence"][0], epsilon, data_grad)
+                else:
+                    batch["sequence"][0].data[:,:,args.channel] = fgsm_attack(batch["sequence"][0], epsilon, data_grad)[:,:,args.channel]
+
+            if args.attack_type == 'PGD':
+                batch["sequence"][0].data = ori + torch.clamp(batch["sequence"][0].data - ori, -args.epsilon, args.epsilon)
+            est_flow = scene_flow(batch["sequence"])
         # end attack
 
 
@@ -285,6 +301,30 @@ if __name__ == "__main__":
         default="../pretrained_models/model_2048.tar",
         help="Path to saved checkpoint.",
     )
+    parser.add_argument(
+        '--attack_type', 
+        type=str, 
+        default='PGD'
+        help='Attack type options: None, FGSM, PGD', 
+    )
+    parser.add_argument(
+        '--iters', 
+        type=int, 
+        default=10
+        help='Number of iters for PGD?', 
+    )
+    parser.add_argument(
+        '--epsilon', 
+        type=int, 
+        default=2
+        help='epsilon?', 
+    )
+    parser.add_argument(
+        '--channel', 
+        type=int, 
+        default=-1
+        help='Color channel options: 0, 1, 2, -1 (all)', 
+    ) 
     args = parser.parse_args()
 
     # Launch training
