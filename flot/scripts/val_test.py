@@ -304,26 +304,26 @@ if __name__ == "__main__":
     parser.add_argument(
         '--attack_type', 
         type=str, 
-        default='PGD'
-        help='Attack type options: None, FGSM, PGD', 
+        default='PGD',
+        help='Attack type options: None, FGSM, PGD',
     )
     parser.add_argument(
         '--iters', 
         type=int, 
-        default=10
-        help='Number of iters for PGD?', 
+        default=10,
+        help='Number of iters for PGD?',
     )
     parser.add_argument(
         '--epsilon', 
         type=int, 
-        default=2
-        help='epsilon?', 
+        default=2,
+        help='epsilon?',
     )
     parser.add_argument(
         '--channel', 
         type=int, 
-        default=-1
-        help='Color channel options: 0, 1, 2, -1 (all)', 
+        default=-1,
+        help='Color channel options: 0, 1, 2, -1 (all)',
     ) 
     args = parser.parse_args()
 
