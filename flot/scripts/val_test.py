@@ -117,7 +117,7 @@ def eval_model(scene_flow, testloader):
                 epsilon = args.epsilon
                 pgd_iters = 1
             else:
-                epsilon = args.epsilon / args.iters
+                epsilon = 2.5 * args.epsilon / args.iters
                 pgd_iters = args.iters
 
         ori = batch["sequence"][0].data
