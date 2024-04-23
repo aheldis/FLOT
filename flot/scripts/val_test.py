@@ -113,14 +113,21 @@ def eval_model(scene_flow, testloader):
         est_flow = scene_flow(batch["sequence"])
         # start attack
         if args.attack_type != 'None':
-            if args.attack_type == 'FGSM':
+            ori = batch["sequence"][0].data
+            if args.attack_type == "RAND":
+                epsilon = args.epsilon
+                shape = ori.shape
+                delta = (np.random.rand(np.product(shape)).reshape(shape) - 0.5) * 2 * epsilon
+                batch["sequence"][0].data = ori + torch.from_numpy(delta).type(torch.float).cuda()
+                est_flow = scene_flow(batch["sequence"])
+                pgd_iters = 0
+            elif args.attack_type == 'FGSM':
                 epsilon = args.epsilon
                 pgd_iters = 1
             else:
                 epsilon = 2.5 * args.epsilon / args.iters
                 pgd_iters = args.iters
 
-        ori = batch["sequence"][0].data
         for itr in range(pgd_iters):
             sf_gt = batch["ground_truth"][1]
             sf_pred = est_flow
