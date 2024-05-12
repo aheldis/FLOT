@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from flot.datasets.generic import Batch
 
 
-def compute_epe(est_flow, batch):
+def compute_epe(est_flow, batch, disp):
     """
     Compute EPE, accuracy and number of outliers.
 
