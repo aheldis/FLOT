@@ -36,7 +36,7 @@ def compute_epe(est_flow, batch):
     mask = batch["ground_truth"][0].cpu().numpy()[..., 0]
 
     # Flow
-    sf_gt = batch["ground_truth"][1].cpu().numpy()[mask > 0]
+    sf_gt = (batch["ground_truth"][1] + disp).cpu().numpy()[mask > 0]
     sf_pred = est_flow.detach().cpu().numpy()[mask > 0]
 
     #
@@ -111,6 +111,7 @@ def eval_model(scene_flow, testloader):
         if args.attack_type != 'None':
             batch["sequence"][0].requires_grad = True # for attack
         est_flow = scene_flow(batch["sequence"])
+        disp = 0
         # start attack
         if args.attack_type != 'None':
             ori = batch["sequence"][0].data
@@ -143,11 +144,12 @@ def eval_model(scene_flow, testloader):
             if args.attack_type == 'PGD':
                 batch["sequence"][0].data = ori + torch.clamp(batch["sequence"][0].data - ori, -args.epsilon, args.epsilon)
             est_flow = scene_flow(batch["sequence"])
+            disp = torch.clamp(ori - batch["sequence"][0].data, -args.epsilon, args.epsilon)
         # end attack
 
 
         # Perf. metrics
-        EPE3D, acc3d_strict, acc3d_relax, outlier = compute_epe(est_flow, batch)
+        EPE3D, acc3d_strict, acc3d_relax, outlier = compute_epe(est_flow, batch, disp)
         running_epe += EPE3D
         running_outlier += outlier
         running_acc3d_relax += acc3d_relax
